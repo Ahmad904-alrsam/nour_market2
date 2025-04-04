@@ -1,203 +1,329 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../controllers/location_controller.dart';
 import '../controllers/register_controller.dart';
+import '../routes/app_pages.dart';
+import '../widgets/backgroundPainter.dart';
 
 class RegisterView extends StatelessWidget {
-  final RegisterController controller = Get.put(RegisterController());
+  final RegisterController controller =
+  Get.put(RegisterController(), permanent: true);
+  final LocationController locationController =
+  Get.put(LocationController());
 
   @override
   Widget build(BuildContext context) {
-    controller.setStateAddress(); // جلب العناوين عند فتح الصفحة
-
     return SafeArea(
       child: Scaffold(
-        backgroundColor: Colors.white,
-        body: Stack(
-          children: [
-            // الخلفية المرسومة باستخدام CustomPainter
-            CustomPaint(
-              size: MediaQuery.of(context).size,
-              painter: BackgroundPainter(),
-            ),
-      
-            // المحتوى الرئيسي
-            SafeArea(
-              child: Center(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Obx(() {
+          if (controller.isLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return Stack(
+            children: [
+              CustomPaint(
+                size: MediaQuery
+                    .of(context)
+                    .size,
+                painter: BackgroundPainter(),
+              ),
+              Center(
                 child: SingleChildScrollView(
-                    padding:
-                EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SizedBox(height: 20),
-      
-                    // الأيقونة والعنوان
-                    CircleAvatar(
-                      radius: 40,
-                      backgroundColor: Colors.teal,
-                      child: Image.asset('assets/images/photo_2025-02-04_16-43-45-removebg-preview.png')
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      "إنشاء حساب",
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-      
-                    SizedBox(height: 40),
-      
-                    // إدخال الاسم الكامل
-                    buildTextField("الاسم الكامل", controller.setFullName),
-      
-                    SizedBox(height: 15),
-      
-                    // إدخال رقم الهاتف
-                    buildTextField(
-                      "رقم الهاتف",
-                      controller.setPhoneNumber,
-                      keyboardType: TextInputType.phone,
-                    ),
-      
-                    SizedBox(height: 15),
-      
-                    // اختيار العنوان والمنطقة
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  padding:
+                  EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+                  child: Form(
+                    key: controller.formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Expanded(
-                          child: _buildDropdown(
-                            "العنوان",
-                            controller.selectedAddress,
-                            controller.addressList,
-                            controller.setSelectedAddress,
+                        SizedBox(height: 20.h),
+                        CircleAvatar(
+                          radius: 40.r,
+                          backgroundColor: Colors.teal,
+                          child: Image.asset(
+                            'assets/images/photo_2025-02-04_16-43-45-removebg-preview.png',
+                            fit: BoxFit.cover,
                           ),
                         ),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: _buildDropdown(
-                            "المنطقة",
-                            controller.selectedRegion,
-                            controller.regionList,
-                            controller.setSelectedRegion,
-                          ),
+                        SizedBox(height: 10.h),
+                        Text(
+                          "إنشاء حساب",
+                          style: TextStyle(
+                              fontSize: 22.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                              fontFamily: 'Cairo'),
                         ),
+                        SizedBox(height: 40.h),
+                        buildTextField("الاسم الكامل ",
+                            controller.nameController,
+                            icon: Icons.person),
+                        SizedBox(height: 15.h),
+                        buildTextField("رقم الهاتف ",
+                            controller.phoneController,
+                            keyboardType: TextInputType.phone,
+                            icon: Icons.phone),
+                        SizedBox(height: 15.h),
+                        // قائمة المحافظات والمناطق مع رموز تعبيرية
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Obx(
+                                    () =>
+                                    DropdownButtonFormField<String>(
+                                      decoration: InputDecoration(
+                                        prefixIcon: Icon(
+                                            Icons.location_city, size: 24.sp),
+                                        labelText: 'المحافظة ',
+                                        labelStyle: TextStyle(
+                                            fontSize: 12.sp,
+                                            fontFamily: 'Cairo'),
+                                        filled: true,
+                                        fillColor: Colors.grey[100],
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 16.w, vertical: 14.h),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                              10.r),
+                                          borderSide: BorderSide.none,
+                                        ),
+                                      ),
+                                      value: locationController
+                                          .selectedGovernorate.value,
+                                      items: locationController.governorates
+                                          .map(
+                                            (gov) =>
+                                            DropdownMenuItem(
+                                              value: gov,
+                                              child: Text(gov,
+                                                  style: TextStyle(
+                                                      fontFamily: 'Cairo',fontSize: 14)),
+                                            ),
+                                      )
+                                          .toList(),
+                                      onChanged: (value) {
+                                        if (value != null) {
+                                          locationController.selectedGovernorate
+                                              .value =
+                                              value;
+                                          locationController
+                                              .updateSelectedRegion();
+                                          locationController
+                                              .updateSelectedDistrict();
+                                        }
+                                      },
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 15.h),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Obx(
+                                    () =>
+                                    DropdownButtonFormField<String>(
+                                      decoration: InputDecoration(
+                                        prefixIcon: Icon(
+                                            Icons.map, size: 24.sp),
+                                        labelText: 'المنطقة ',
+                                        labelStyle: TextStyle(
+                                            fontSize: 12.sp,
+                                            fontFamily: 'Cairo'),
+                                        filled: true,
+                                        fillColor: Colors.grey[100],
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 16.w, vertical: 14.h),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                              10.r),
+                                          borderSide: BorderSide.none,
+                                        ),
+                                      ),
+                                      value: locationController.selectedRegion
+                                          .value,
+                                      items: locationController.filteredRegions
+                                          .map(
+                                            (region) =>
+                                            DropdownMenuItem(
+                                              value: region.name,
+                                              child: Text(region.name,
+                                                  style: TextStyle(
+                                                      fontFamily: 'Cairo',fontSize: 14)),
+                                            ),
+                                      )
+                                          .toList(),
+                                      onChanged: (value) {
+                                        if (value != null) {
+                                          locationController.selectedRegion
+                                              .value =
+                                              value;
+                                          locationController
+                                              .updateSelectedDistrict();
+                                        }
+                                      },
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 15.h),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Obx(
+                                    () =>
+                                    DropdownButtonFormField<String>(
+                                      decoration: InputDecoration(
+                                        prefixIcon: Icon(
+                                            Icons.home, size: 24.sp),
+                                        labelText: 'الحي ',
+                                        labelStyle: TextStyle(
+                                            fontSize: 12.sp,
+                                            fontFamily: 'Cairo'),
+                                        filled: true,
+                                        fillColor: Colors.grey[100],
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 16.w, vertical: 14.h),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                              10.r),
+                                          borderSide: BorderSide.none,
+                                        ),
+                                      ),
+                                      value: locationController.selectedDistrict
+                                          .value,
+                                      items: locationController
+                                          .filteredDistricts
+                                          .map(
+                                            (district) =>
+                                            DropdownMenuItem(
+                                              value: district.name,
+                                              child: Text(district.name,
+                                                  style: TextStyle(
+                                                      fontFamily: 'Cairo',
+                                                  fontSize: 14)),
+                                            ),
+                                      )
+                                          .toList(),
+                                      onChanged: (value) {
+                                        if (value != null) {
+                                          locationController.selectedDistrict
+                                              .value =
+                                              value;
+                                        }
+                                      },
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 16.h),
+                        buildTextField("تفاصيل الموقع ",
+                            controller.detailsController,
+                            icon: Icons.location_on),
+                        SizedBox(height: 30.h),
+                        ElevatedButton(
+                          onPressed: () async {
+                            // عرض مؤشر التحميل
+                            Get.dialog(
+                              Center(child: CircularProgressIndicator()),
+                              barrierDismissible: false,
+                            );
+
+                            // استدعاء دالة التسجيل وانتظار النتيجة
+                            final success = await controller.register(); // تأكد إن الدالة بتعيد نتيجة نجاح التسجيل
+
+                            // إغلاق الـ dialog بعد انتهاء العملية
+                            if (Get.isDialogOpen ?? false) {
+                              Get.back();
+                            }
+
+                            // التنقل للصفحة الرئيسية فقط إذا كانت العملية ناجحة
+                            if (success) {
+                              Get.offNamed(Routes.HOME);
+                            } else {
+                              // تعامل مع الخطأ مثلاً بعرض رسالة تنبيه
+                              Get.snackbar("خطأ", "فشل إنشاء الحساب");
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.teal,
+                            minimumSize: Size(double.infinity, 50.h),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10.r),
+                            ),
+                          ),
+                          child: Text(
+                            "إنشاء حساب",
+                            style: TextStyle(
+                                fontSize: 18.sp,
+                                color: Colors.white,
+                                fontFamily: 'Cairo'
+                            ),
+                          ),
+                        )
                       ],
                     ),
-      
-                    SizedBox(height: 30),
-      
-                    // زر إنشاء الحساب
-                    ElevatedButton(
-                      onPressed: controller.registerUser,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal,
-                        minimumSize: Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: Text(
-                        "إنشاء حساب",
-                        style: TextStyle(fontSize: 18, color: Colors.white),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-            )
-          ],
-        ),
+            ],
+          );
+        }),
       ),
     );
   }
 
-  // **دالة لإنشاء حقل إدخال (TextField)**
-  Widget buildTextField(String hint, Function(String) onChanged,
-      {TextInputType keyboardType = TextInputType.text}) {
-    return TextField(
-      onChanged: onChanged,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        hintText: hint,
-        filled: true,
-        fillColor: Colors.grey[300],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
-  }
-
-  // **دالة لإنشاء قائمة منسدلة (Dropdown)**
-  Widget _buildDropdown(String hint, RxString selectedValue, List<String> items,
-      Function(String) onChanged) {
-    return Obx(
-          () => DropdownButtonFormField<String>(
-        value: selectedValue.value.isEmpty ? null : selectedValue.value,
-        items: items
-            .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-            .toList(),
-        onChanged: (value) {
-          if (value != null) {
-            onChanged(value);
+  Widget buildTextField(String hint, TextEditingController controller,
+      {TextInputType keyboardType = TextInputType.text, IconData? icon}) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8.h),
+      child: TextFormField(
+        textAlign: TextAlign.right, // لضبط الكتابة من اليمين لليسار
+        controller: controller,
+        keyboardType: keyboardType,
+        style: TextStyle(fontSize: 14.sp, fontFamily: 'Cairo'),
+        validator: (value) {
+          if (value?.trim().isEmpty ?? true) {
+            return 'رجاءً أدخل $hint';
           }
+          if (hint.contains("رقم الهاتف")) {
+            if (!RegExp(r'^\d+$').hasMatch(value!)) {
+              return 'الرجاء إدخال رقم هاتف صحيح';
+            }
+            if (value.length < 10) {
+              return 'رقم الهاتف يجب أن يكون على الأقل 10 أرقام';
+            }
+            // شرط التأكد من أن الرقم يبدأ بـ "09"
+            if (!value.startsWith("09")) {
+              return 'يجب أن يبدأ رقم الهاتف بـ 09';
+            }
+          }
+          return null;
         },
         decoration: InputDecoration(
+          prefixIcon: icon != null ? Icon(icon, size: 24.sp) : null,
+          labelText: hint,
+          labelStyle: TextStyle(
+              color: Colors.grey[700], fontSize: 12.sp, fontFamily: 'Cairo'),
+          hintText: hint,
+          hintStyle: TextStyle(
+              color: Colors.grey[400], fontFamily: 'Cairo', fontSize: 12.sp),
           filled: true,
-          fillColor: Colors.grey[300],
+          fillColor: Colors.grey[100],
+          contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(10.r),
+            borderSide: BorderSide.none,
           ),
+          errorStyle: TextStyle(
+              color: Colors.red, fontSize: 10.sp, fontFamily: 'Cairo'),
         ),
-        hint: Text(hint),
       ),
     );
   }
-}
-
-class BackgroundPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    // إعداد فرشاة الرسم بلون teal مع شفافية 30%
-    final Paint paint = Paint()
-      ..color = Colors.teal.withOpacity(0.3)
-      ..style = PaintingStyle.fill;
-
-    // رسم الشكل العلوي المنحني
-    final Path topPath = Path();
-    topPath.moveTo(0, 0);
-    topPath.lineTo(0, size.height * 0.25);
-    topPath.quadraticBezierTo(
-      size.width * 0.5,
-      size.height * 0.35,
-      size.width,
-      size.height * 0.25,
-    );
-    topPath.lineTo(size.width, 0);
-    topPath.close();
-
-    // رسم الشكل السفلي المنحني
-    final Path bottomPath = Path();
-    bottomPath.moveTo(0, size.height);
-    bottomPath.lineTo(0, size.height * 0.83);
-    bottomPath.quadraticBezierTo(
-      size.width * 0.5,
-      size.height * 0.73,
-      size.width,
-      size.height * 0.83,
-    );
-    bottomPath.lineTo(size.width, size.height);
-    bottomPath.close();
-
-    // رسم المسارين بنفس الفرشاة (teal مع شفافية)
-    canvas.drawPath(topPath, paint);
-    canvas.drawPath(bottomPath, paint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

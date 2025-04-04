@@ -1,12 +1,12 @@
-// lib/controllers/bottom_nav_conttroller.dart
+// lib/controllers/bottom_nav_controller.dart
 import 'package:get/get.dart';
 
-class BottomNavConttroller extends GetxController {
-  // متغير observable لحفظ الفهرس الحالي
-  var currentIndex = 0.obs;
-
-  /// دالة لتغيير الصفحة عند الضغط على زر التنقل
-  void changePage(int index) {
-    currentIndex.value = index;
+class BottomNavController extends GetxController {
+  final RxInt currentIndex = 0.obs;
+  final RxInt cartItemCount = 0.obs;
+  void resetCartCount() {
+    cartItemCount.value = 0;
   }
+  void changePage(int index) => currentIndex.value = index;
+  void updateCartCount(int count) => cartItemCount.value = count;
 }

@@ -1,87 +1,102 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
-import '../controllers/profile_controller.dart';
+import '../controllers/user_controller.dart';
+import '../controllers/register_controller.dart';
+import '../controllers/faq_controller.dart';
+import '../routes/app_pages.dart';
 import '../widgets/buildBannerNew.dart';
+import '../widgets/faq_section.dart';
+import '../widgets/menu_list.dart';
+import '../widgets/profile_header.dart';
+import '../widgets/user_info_card.dart';
 
 class ProfilePage extends StatelessWidget {
-  final ProfileController profileController = Get.put(ProfileController());
+  final UserController userController = Get.put(UserController());
+  final RegisterController registerController = Get.put(RegisterController());
+  final FaqController faqController = Get.put(FaqController());
+
+  ProfilePage({Key? key}) : super(key: key) {
+    userController.getUserData();
+    faqController.fetchFaqs();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar:
-        CustomAppBarNew(title: 'الملف الشخصي',),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: CustomAppBarNew(title: 'الملف الشخصي',showDarkModeToggle: true,),
+      body: Obx(() => _buildBodyContent()),
+    );
+  }
 
-      body: Obx(() {
-        if (profileController.isLoading.value) {
-          return Center(child: CircularProgressIndicator());
-        } else if (profileController.profile.value == null) {
-          return Center(child: Text("لا يوجد بيانات"));
-        } else {
-          final profile = profileController.profile.value!;
-          return SingleChildScrollView(
-            child: Column(
-              children: [
-                // قسم بيانات المستخدم
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundImage: NetworkImage(profile.profileImage),
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        profile.name,
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(height: 5),
-                      Text(profile.phone),
-                      SizedBox(height: 5),
-                      Text("${profile.address}, ${profile.region}"),
-                    ],
+  Widget _buildBodyContent() {
+    if (userController.isLoading.value) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final currentUser = userController.user.value;
+    if (currentUser == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (!currentUser.isActive) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.offAllNamed(Routes.WELCOME);
+        Get.snackbar('تنبيه', 'حسابك غير مفعل');
+      });
+      return Container();
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          ProfileHeader(user: currentUser),
+          _buildEditButton(),
+          UserInfoCard(user: currentUser),
+          const MenuList(),
+          FaqSection(faqController: faqController),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditButton() {
+    return Container(
+      margin: const EdgeInsets.all(20),
+      alignment: Alignment.center,
+      child: ElevatedButton(
+        onPressed: () => Get.toNamed(Routes.EditProfilePage),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blue[800],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          elevation: 10,
+          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.edit_note, color: Colors.white, size: 22),
+            const SizedBox(width: 8),
+            const Text(
+              'تعديل الملف الشخصي',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                shadows: [
+                  Shadow(
+                    color: Colors.black26,
+                    blurRadius: 2,
+                    offset: Offset(1, 1),
                   ),
-                ),
-                Divider(),
-                // قائمة الخيارات
-                ListTile(
-                  leading: Icon(Icons.list_alt),
-                  title: Text("حالة الطلب"),
-                  onTap: () {
-                    // الانتقال إلى صفحة حالة الطلب
-                    Get.toNamed('/orderStatus');
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.notifications),
-                  title: Text("الإشعارات"),
-                  onTap: () {
-                    // الانتقال إلى صفحة الإشعارات
-                    Get.toNamed('/notifications');
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.contact_phone),
-                  title: Text("تواصل معنا"),
-                  onTap: () {
-                    // الانتقال إلى صفحة تواصل معنا أو فتح نموذج الاتصال
-                    Get.toNamed('/contactUs');
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.logout),
-                  title: Text("تسجيل الخروج"),
-                  onTap: () {
-                    profileController.logout();
-                  },
-                ),
-              ],
+                ],
+              ),
             ),
-          );
-        }
-      }),
+          ],
+        ),
+      ),
     );
   }
 }

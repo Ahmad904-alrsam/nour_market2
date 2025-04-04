@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../routes/app_pages.dart';
 
 class WelcomeView extends StatelessWidget {
@@ -7,57 +8,52 @@ class WelcomeView extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        backgroundColor: Colors.white, // لون الخلفية الأساسية
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Stack(
           children: [
-            // الخلفية المنحنية المعدلة لتكون منخفضة قليلاً
             Positioned.fill(
               child: CustomPaint(
                 painter: BackgroundPainter(),
               ),
             ),
-
             // محتوى الصفحة
             Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: EdgeInsets.all(20.w),
               child: Column(
-                // يبدأ المحتوى من الأعلى
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // نص الترحيب في الأعلى مع ضبط مسافة من الأعلى
                   Padding(
-                    padding: const EdgeInsets.only(top: 20.0),
+                    padding: EdgeInsets.only(top: 20.h),
                     child: Text(
                       "مرحبًا بك في\nتطبيق نور ماركت",
                       style: TextStyle(
-                        fontSize: 22,
+                        fontSize: 22.sp,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
+                        fontFamily: "Cairo",
                       ),
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  SizedBox(height: 40),
-
+                  SizedBox(height: 40.h),
                   // الصورة
                   Image.asset(
                     "assets/images/charectar_1.png", // ضع الصورة في مجلد assets
-                    height: 160,
+                    height: 145.h,
+                    fit: BoxFit.contain,
                   ),
-                  SizedBox(height: 40),
-
+                  SizedBox(height: 40.h),
                   // النص التوضيحي
                   Text(
                     "تسوق وانت مريح راسك\nواختار الي بيناسبك لك ولعيلتك",
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 20.sp,
                       color: Colors.grey[700],
+                      fontFamily: "Cairo",
                     ),
                     textAlign: TextAlign.center,
                   ),
-
-                  SizedBox(height: 120,),
-
+                  SizedBox(height: 120.h),
                   // زر إنشاء حساب
                   ElevatedButton(
                     onPressed: () async {
@@ -73,18 +69,21 @@ class WelcomeView extends StatelessWidget {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.teal, // لون الزر
-                      minimumSize: Size(double.infinity, 50),
+                      minimumSize: Size(double.infinity, 50.h),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(10.r),
                       ),
                     ),
                     child: Text(
                       "إنشاء حساب",
-                      style: TextStyle(fontSize: 18, color: Colors.white),
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        color: Colors.white,
+                        fontFamily: "Cairo",
+                      ),
                     ),
                   ),
-                  SizedBox(height: 20),
-
+                  SizedBox(height: 20.h),
                   // زر تسجيل دخول
                   OutlinedButton(
                     onPressed: () async {
@@ -100,15 +99,18 @@ class WelcomeView extends StatelessWidget {
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.teal, // لون النص
-                      minimumSize: Size(double.infinity, 50),
+                      minimumSize: Size(double.infinity, 50.h),
                       side: BorderSide(color: Colors.teal), // لون الحدود
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(10.r),
                       ),
                     ),
                     child: Text(
                       "تسجيل دخول",
-                      style: TextStyle(fontSize: 18),
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        fontFamily: "Cairo",
+                      ),
                     ),
                   ),
                 ],
@@ -121,23 +123,21 @@ class WelcomeView extends StatelessWidget {
   }
 }
 
-// رسم الخلفية المنحنية بعد تعديل الإحداثيات
+// رسم الخلفية المنحنية
 class BackgroundPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    // تعديل إحداثيات الرسم لجعل الخلفية تنزل إلى الأسفل
     Paint paint = Paint()..color = Colors.teal.withOpacity(0.3);
     Path path = Path()
-      ..moveTo(0, size.height * 0.53) // بدء المنحنى من 40% من ارتفاع الشاشة
+      ..moveTo(0, size.height * 0.53)
       ..quadraticBezierTo(
-          size.width / 2, size.height * 0.33, // نقطة التحكم لتعديل شكل المنحنى
-          size.width, size.height * 0.53) // نهاية المنحنى على نفس الارتفاع
+        size.width / 2, size.height * 0.33,
+        size.width, size.height * 0.53,
+      )
       ..lineTo(size.width, size.height)
       ..lineTo(0, size.height)
       ..close();
     canvas.drawPath(path, paint);
-
-
   }
 
   @override

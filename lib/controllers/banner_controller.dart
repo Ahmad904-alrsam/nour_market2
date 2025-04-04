@@ -1,94 +1,59 @@
 import 'dart:async';
-import 'package:flutter/animation.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../controllers/home_controller.dart';
+import '../models/banner.dart';
 
 class BannerController extends GetxController {
-  var selectedIndex = 0.obs;
-  var currentPage = 0.obs;
-
-  PageController pageController = PageController();
-  PageController bannerPageController = PageController();
-
-  // قائمة الصور التي ستظهر في البانر
-  RxList<String> bannerImages = <String>[].obs;
-
-  // إنشاء مثيل من GetConnect لاستخدامه في جلب البيانات
-  final GetConnect _getConnect = GetConnect();
+  final HomeController homeController = Get.find<HomeController>();
+  final PageController pageController = PageController();
+  final RxInt currentPage = 0.obs;
+  Timer? _autoPlayTimer;
 
   @override
   void onInit() {
     super.onInit();
-    // جلب الصور من السيرفر عند بدء تشغيل الـ Controller
-    fetchBannerImages();
-    // بدء تدوير البانر بشكل دوري
-    startBannerRotation();
+    ever(homeController.banners, _handleBannerUpdates);
+    _startAutoPlay();
   }
 
-  /// دالة لجلب روابط الصور من السيرفر باستخدام GetConnect
-  Future<void> fetchBannerImages() async {
-    // عدل رابط الـ API الخاص بك أدناه
-    final String url = 'https://api.example.com/banners';
-
-    try {
-      final response = await _getConnect.get(url);
-      if (response.statusCode == 200) {
-        // نفترض أن الـ API تُرجع بيانات بصيغة JSON تحتوي على قائمة من الروابط
-        // مثال 1: إذا كانت البيانات عبارة عن قائمة مباشرة
-        if (response.body is List) {
-          bannerImages.assignAll(List<String>.from(response.body));
-        }
-        // مثال 2: إذا كانت البيانات مغلفة داخل مفتاح مثل "banners"
-        else if (response.body['banners'] != null) {
-          bannerImages.assignAll(List<String>.from(response.body['banners']));
-        }
-      } else {
-        print('فشل جلب الصور. كود الخطأ: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('حدث خطأ أثناء جلب الصور: $e');
+  void _handleBannerUpdates(List<BannerModel> banners) {
+    if (banners.isNotEmpty) {
+      _stopAutoPlay();
+      _startAutoPlay();
     }
   }
 
-  /// دالة لتغيير الصورة في البانر كل 3 ثوانٍ
-  void startBannerRotation() {
-    Timer.periodic(Duration(seconds: 3), (Timer timer) {
-      if (bannerPageController.hasClients && bannerImages.isNotEmpty) {
-        int currentPageIndex = bannerPageController.page?.toInt() ?? 0;
-        int nextPage = currentPageIndex + 1;
-        if (nextPage >= bannerImages.length) {
-          nextPage = 0;
-        }
-        bannerPageController.animateToPage(
-          nextPage,
-          duration: Duration(milliseconds: 300),
+  void _startAutoPlay() {
+    _autoPlayTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (homeController.banners.isEmpty || !pageController.hasClients) return;
+
+      final nextPage = currentPage.value + 1;
+      if (nextPage >= homeController.banners.length) {
+        pageController.jumpToPage(0);
+        currentPage.value = 0;
+      } else {
+        pageController.nextPage(
+          duration: const Duration(milliseconds: 500),
           curve: Curves.easeInOut,
         );
       }
     });
   }
 
+  void _stopAutoPlay() {
+    _autoPlayTimer?.cancel();
+    _autoPlayTimer = null;
+  }
+
   void onPageChanged(int index) {
-    selectedIndex.value = index;
-  }
-
-  void onBanarChanged(int index) {
     currentPage.value = index;
-  }
-
-  void onNavItemTapped(int index) {
-    selectedIndex.value = index;
-    pageController.animateToPage(
-      index,
-      duration: Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
   }
 
   @override
   void onClose() {
+    _stopAutoPlay();
     pageController.dispose();
-    bannerPageController.dispose();
     super.onClose();
   }
 }

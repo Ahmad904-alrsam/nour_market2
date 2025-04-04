@@ -1,38 +1,86 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
-
-import '../models/Product.dart';
-import '../services/product_details.dart';
+import 'package:http/http.dart' as http;
+import '../models/product_model.dart';
 
 class ProductDetailController extends GetxController {
-  var product = Rxn<Product>();
+  // حالة التحميل ورسالة الخطأ
   var isLoading = true.obs;
   var errorMessage = ''.obs;
-  var quantity = 1.obs;
+  RxString selectedAlternativeOption = "".obs;
+  RxString userNote ="".obs;
+  // تخزين تفاصيل المنتج
+  var product = Rxn<Product>();
 
-  final ProductService productService = ProductService();
+  // السعر الحالي والكمية
+  RxDouble currentPrice = 0.0.obs;
+  RxInt quantity = 1.obs;
 
-  Future<void> fetchProductDetail(int productId) async {
+  final String baseUrl = 'https://nour-market.site';
+  final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
+
+  Future<void> fetchProductDetails(int productId) async {
     try {
-      isLoading.value = true;
+      isLoading(true);
       errorMessage.value = '';
-      final response = await productService.fetchProductDetail(productId);
-      if (response.statusCode == 200) {
-        if (response.body != null && response.body is Map<String, dynamic>) {
-          product.value = Product.fromJson(response.body);
-        } else {
-          errorMessage.value = 'البيانات غير صحيحة';
-        }
-      } else {
-        errorMessage.value = 'حدث خطأ: ${response.statusCode}';
+      final token = await secureStorage.read(key: 'jwt');
+
+      // بناء الرابط بشكل صحيح
+      final url = Uri.parse('$baseUrl/api/products/$productId/show');
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      switch (response.statusCode) {
+        case 200:
+          print(response.body);
+          final Map<String, dynamic> data = json.decode(response.body);
+          product.value = Product.fromJson(data['product']);
+          // افتراضاً أن نموذج المنتج يحتوي على خاصية price
+          currentPrice.value = product.value!.price;
+
+          break;
+
+        case 401:
+          Get.snackbar('خطأ مصادقة', 'يرجى إعادة تسجيل الدخول');
+          await secureStorage.delete(key: 'jwt');
+          Get.offAllNamed('/login');
+          break;
+
+        case 404:
+          errorMessage.value = 'المنتج المطلوب غير متوفر';
+          Get.snackbar('غير موجود', errorMessage.value);
+          product.value = null;
+          break;
+
+        default:
+          errorMessage.value = 'فشل جلب البيانات: ${response.body}';
+          Get.snackbar('خطأ ${response.statusCode}', errorMessage.value);
       }
     } catch (e) {
-      errorMessage.value = e.toString();
+      errorMessage.value = e is SocketException
+          ? 'مشكلة في الاتصال بالإنترنت'
+          : e.toString();
+      Get.snackbar('خطأ غير متوقع', errorMessage.value);
     } finally {
-      isLoading.value = false;
+      isLoading(false);
     }
   }
-  void increment() => quantity++;
+
+  // دوال تعديل الكمية
+  void increment() {
+    quantity.value++;
+  }
+
   void decrement() {
-    if (quantity > 1) quantity--;
+    if (quantity.value > 1) {
+      quantity.value--;
+    }
   }
 }

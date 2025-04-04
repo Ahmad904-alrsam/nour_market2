@@ -1,54 +1,158 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';import '../controllers/priceweight_controller.dart';
+import 'package:get/get.dart';
+import '../controllers/priceweight_controller.dart';
+import '../models/product_model.dart';
 
-import '../models/Product.dart';
+class ProductUnitConversionWidget extends StatefulWidget {
+  final Product product;
+  final Function(double)? onWeightChanged;
+  final Function(double)? onPriceChanged;
 
-class ProductUnitConversionWidget extends StatelessWidget {
-  final Product product; // يجب أن يحتوي على حقل unit وسعر المنتج (price)
+  const ProductUnitConversionWidget({
+    Key? key,
+    required this.product,
+    this.onWeightChanged,
+    this.onPriceChanged,
+  }) : super(key: key);
 
-  const ProductUnitConversionWidget({Key? key, required this.product}) : super(key: key);
+  @override
+  _ProductUnitConversionWidgetState createState() =>
+      _ProductUnitConversionWidgetState();
+}
+
+class _ProductUnitConversionWidgetState
+    extends State<ProductUnitConversionWidget> {
+  final TextEditingController weightController = TextEditingController();
+  final TextEditingController priceController = TextEditingController();
+
+  late final PriceWeightController conversionController;
+
+  // Flags لمنع التحديثات المتكررة (infinite loop)
+  bool _isUpdatingPrice = false;
+  bool _isUpdatingWeight = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // تعيين قيمة افتراضية للوزن
+    weightController.text = '0';
+
+    // تسجيل المراقب مع tag خاص بالمنتج
+    conversionController = Get.put(
+      PriceWeightController(unitPrice: widget.product.price.toDouble()),
+      tag: widget.product.id.toString(),
+    );
+  }
+
+  @override
+  void dispose() {
+    weightController.dispose();
+    priceController.dispose();
+    super.dispose();
+  }
+
+  // دوال تحويل بسيطة بناءً على سعر الوحدة
+  double _priceToWeight(double price) =>
+      conversionController.unitPrice != 0
+          ? price / conversionController.unitPrice
+          : 0;
+
+  double _weightToPrice(double weight) =>
+      weight * conversionController.unitPrice;
 
   @override
   Widget build(BuildContext context) {
-    // إذا كانت الوحدة ليست "فرط"، يتم عرض النص فقط:
-    if (product.unit != "فرط") {
-      return Center(
-        child: Text(
-          product.unit,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 16),
-        ),
-      );
+    // إذا كان نوع المنتج "piece" فلا يظهر هذا الودجت
+    if (widget.product.type?.toLowerCase() == "piece") {
+      return const SizedBox.shrink();
     }
 
-    // إذا كانت الوحدة "فرط"، نقوم بإنشاء Controller للتحويل
-    // نستخدم tag لضمان تمييز هذا الـ controller في حال ظهور أكثر من منتج بنفس الصفحة
-    final PriceWeightController conversionController = Get.put(
-      PriceWeightController(unitPrice: product.price),
-      tag: product.id.toString(),
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Row(
       children: [
-        TextField(
-          controller: conversionController.priceController,
-          decoration: const InputDecoration(
-            labelText: "أدخل السعر",
-            border: OutlineInputBorder(),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'سعر الكمية:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: priceController,
+                keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  hintText: 'سعر الكمية',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 16),
+                ),
+                onChanged: (value) {
+                  if (_isUpdatingPrice) return;
+                  double? price = double.tryParse(value);
+                  if (price != null) {
+                    if (widget.onPriceChanged != null) {
+                      widget.onPriceChanged!(price);
+                    }
+                    // حساب الوزن بناءً على السعر المدخل
+                    double weight = _priceToWeight(price);
+                    _isUpdatingWeight = true;
+                    weightController.text = weight.toStringAsFixed(2);
+                    _isUpdatingWeight = false;
+                    if (widget.onWeightChanged != null) {
+                      widget.onWeightChanged!(weight);
+                    }
+                  }
+                },
+              ),
+            ],
           ),
-          keyboardType: TextInputType.numberWithOptions(decimal: true),
-          onChanged: conversionController.onPriceChanged,
         ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: conversionController.weightController,
-          decoration: const InputDecoration(
-            labelText: "أدخل الوزن",
-            border: OutlineInputBorder(),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'الوزن:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: weightController,
+                keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  hintText: 'الوزن',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 16),
+                ),
+                onChanged: (value) {
+                  if (_isUpdatingWeight) return;
+                  double? weight = double.tryParse(value);
+                  if (weight != null) {
+                    if (widget.onWeightChanged != null) {
+                      widget.onWeightChanged!(weight);
+                    }
+                    // حساب السعر بناءً على الوزن المدخل
+                    double price = _weightToPrice(weight);
+                    _isUpdatingPrice = true;
+                    priceController.text = price.toStringAsFixed(2);
+                    _isUpdatingPrice = false;
+                    if (widget.onPriceChanged != null) {
+                      widget.onPriceChanged!(price);
+                    }
+                  }
+                },
+              ),
+            ],
           ),
-          keyboardType: TextInputType.numberWithOptions(decimal: true),
-          onChanged: conversionController.onWeightChanged,
         ),
       ],
     );

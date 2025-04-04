@@ -1,14 +1,18 @@
-
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 class CustomAppBarNew extends StatelessWidget implements PreferredSizeWidget {
   final String title;
+  final bool showDarkModeToggle;
 
-  CustomAppBarNew({Key? key, required this.title}) : super(key: key);
+  CustomAppBarNew({
+    Key? key,
+    required this.title,
+    this.showDarkModeToggle = false,
+  }) : super(key: key);
 
-  // قائمة الأيقونات الخاصة بالسوبر ماركت (صور من الأصول)
   final List<Widget> supermarketIcons = [
     Image.asset('assets/icons/img.png'),
     Image.asset('assets/icons/img_1.png'),
@@ -23,31 +27,28 @@ class CustomAppBarNew extends StatelessWidget implements PreferredSizeWidget {
     Image.asset('assets/icons/img_10.png'),
   ];
 
-  // قائمة زوايا التدوير (بالراديان) لتنوع الميلان
   final List<double> angles = [0.2, -0.2, 0.1, -0.1, 0.15, -0.15];
 
-  // تخزين أيقونات عشوائية ثابتة عند إنشاء الـ AppBar لأول مرة
   static final List<Widget> randomIcons = [];
   static final List<double> randomAngles = [];
 
-  static bool initialized = false; // للتحكم في التهيئة لمرة واحدة فقط
+  static bool initialized = false;
 
-  // دالة لتوليد أيقونات عشوائية فقط مرة واحدة
   void initRandomIcons() {
     if (!initialized) {
       final Random random = Random();
       for (int i = 0; i < 50; i++) {
         randomIcons.add(
-            supermarketIcons[random.nextInt(supermarketIcons.length)]);
+          supermarketIcons[random.nextInt(supermarketIcons.length)],
+        );
         randomAngles.add(angles[random.nextInt(angles.length)]);
       }
-      initialized = true; // منع التهيئة مرة أخرى
+      initialized = true;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // تشغيل التهيئة لمرة واحدة
     initRandomIcons();
 
     return PreferredSize(
@@ -67,7 +68,7 @@ class CustomAppBarNew extends StatelessWidget implements PreferredSizeWidget {
           ),
           child: Stack(
             children: [
-              // خلفية الأيقونات العشوائية (ثابتة لا تتغير)
+              // الخلفية مع أيقونات السوبر ماركت
               Positioned.fill(
                 child: Opacity(
                   opacity: 0.15,
@@ -93,19 +94,40 @@ class CustomAppBarNew extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
               ),
-              // النص الرئيسي "الأقسام" في المنتصف
+              // النص الرئيسي في المنتصف
               Positioned.fill(
                 child: Center(
                   child: Text(
                     title,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 22,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      fontFamily: 'Cairo',
                     ),
                   ),
                 ),
               ),
+              // عرض أيقونة تبديل الوضع فقط إذا كانت showDarkModeToggle true
+              if (showDarkModeToggle)
+                Positioned(
+                  right: 10,
+                  top: 10,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20,horizontal: 15),
+                    child: IconButton(
+                      icon: Icon(
+                        Get.isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                        color: Colors.white,
+                      ),
+                      onPressed: () {
+                        Get.changeThemeMode(
+                          Get.isDarkMode ? ThemeMode.light : ThemeMode.dark,
+                        );
+                      },
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -114,5 +136,5 @@ class CustomAppBarNew extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(100);
+  Size get preferredSize => const Size.fromHeight(75);
 }

@@ -1,35 +1,26 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 
-class RegisterProvider extends GetConnect {
-  final String baseUrl = "https://api.example.com"; // هذا الرابط مجرد مثال
+class AuthService extends GetxService {
+  final _storage = const FlutterSecureStorage();
+  final isLoggedIn = false.obs;
 
-  @override
-  void onInit() {
-    httpClient.baseUrl = baseUrl;
+  Future<void> init() async {
+    final token = await _storage.read(key: 'jwt_token');
+    isLoggedIn.value = token != null;
   }
 
-  // محاكاة جلب العناوين من السيرفر باستخدام بيانات وهمية
-  Future<Response> fetchAddresses() async {
-    // تأخير بسيط لمحاكاة وقت الاستجابة من السيرفر
-    await Future.delayed(Duration(seconds: 1));
-    // إرجاع استجابة وهمية مع قائمة عناوين
-    return Response(
-      statusCode: 200,
-      body: [
-        {"name": "عنوان 1"},
-        {"name": "عنوان 2"},
-        {"name": "عنوان 3"},
-      ],
-    );
+  Future<void> saveToken(String token) async {
+    await _storage.write(key: 'jwt_token', value: token);
+    isLoggedIn.value = true;
   }
 
-  // محاكاة إرسال بيانات التسجيل إلى السيرفر
-  Future<Response> registerUser(Map<String, dynamic> data) async {
-    await Future.delayed(Duration(seconds: 1));
-    // هنا يمكن إرجاع استجابة ناجحة، مثلاً:
-    return Response(
-      statusCode: 201,
-      body: {"message": "تم إنشاء الحساب بنجاح"},
-    );
+  Future<void> deleteToken() async {
+    await _storage.delete(key: 'jwt_token');
+    isLoggedIn.value = false;
+  }
+
+  Future<String?> getToken() async {
+    return await _storage.read(key: 'jwt_token');
   }
 }

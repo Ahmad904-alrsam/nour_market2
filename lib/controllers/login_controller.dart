@@ -1,30 +1,60 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../services/login_provider.dart';
+import 'package:http/http.dart';
+
+import '../routes/app_pages.dart';
+import '../services/register_provider.dart';
+import '../services/storageservice.dart';
 
 class LoginController extends GetxController {
-  final LoginProvider loginProvider = LoginProvider();
+  final formKey = GlobalKey<FormState>();
 
-  // متغيرات لمراقبة حالة التحميل والرسائل
-  var isLoading = false.obs;
-  var errorMessage = ''.obs;
+  final AuthService _auth = Get.find();
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
 
-  /// دالة تسجيل الدخول عبر استدعاء loginUser في الـ Provider
-  Future<void> login(String name, String phone) async {
-    isLoading.value = true;
-    errorMessage.value = '';
+  final isLoading = false.obs;
+  final errorMessage = ''.obs;
 
-    final response = await loginProvider.loginUser({
-      'name': name,
-      'phone': phone,
-    });
+  Future<void> login() async {
+    try {
+      isLoading(true);
+      errorMessage('');
 
-    if (response.statusCode == 200) {
-      // تسجيل الدخول ناجح؛ يمكنك تخزين بيانات المستخدم أو التوكن هنا
-      // مثال: final token = response.body['token'];
-      Get.offAllNamed('/home'); // الانتقال للصفحة الرئيسية
-    } else {
-      errorMessage.value = response.body['message'] ?? 'حدث خطأ أثناء تسجيل الدخول';
+      if (nameController.text.isEmpty || phoneController.text.isEmpty) {
+        errorMessage('الرجاء ملء جميع الحقول');
+        return;
+      }
+
+      final response = await post(
+        Uri.parse('https://nour-market.site/api/login'),
+        body: {
+          'name': nameController.text,
+          'phone': phoneController.text,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final token = jsonDecode(response.body)['token'];
+        await _auth.saveToken(token);
+        await StorageService.getToken();
+        Get.offAllNamed(Routes.HOME);
+      } else {
+        errorMessage('فشل تسجيل الدخول: ${response.body}');
+      }
+    } catch (e) {
+      errorMessage('حدث خطأ: ${e.toString()}');
+    } finally {
+      isLoading(false);
     }
-    isLoading.value = false;
+  }
+
+  @override
+  void onClose() {
+    nameController.dispose();
+    phoneController.dispose();
+    super.onClose();
   }
 }

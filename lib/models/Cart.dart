@@ -1,19 +1,24 @@
-import 'Product.dart';
+import 'package:get/get.dart';
+import 'package:nour_market2/models/product_model.dart';
 
 class CartItem {
   final Product product;
-  final int quantity;
+  final RxInt quantity;
+  final RxString note;
+  final RxString alternativeOption;
+  final RxDouble weight; // خاصية الوزن
+  final RxDouble quantityPrice; // خاصية سعر الكمية
 
   CartItem({
     required this.product,
-    required this.quantity,
-  });
-
-  factory CartItem.fromJson(Map<String, dynamic> json) {
-    return CartItem(
-      product: Product.fromJson(json['product']),
-      quantity: json['quantity'],
-    );
-  }
-
+    required int initialQuantity,
+    String note = '',
+    String alternativeOption = '',
+    double weight = 0, // قيمة افتراضية للوزن
+    double quantityPrice = 0, // قيمة افتراضية لسعر الكمية
+  })  : quantity = initialQuantity.obs,
+        note = note.obs,
+        alternativeOption = alternativeOption.obs,
+        weight = weight.obs,
+        quantityPrice = quantityPrice.obs;
 }

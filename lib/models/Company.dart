@@ -1,15 +1,22 @@
-// lib/models/company.dart
 class Company {
+  final int id;
   final String name;
-  final String? logoUrl;
+  final String? image;
+  final String? is_active;
+  final String created_at;
+  final String updated_at;
+  // باقي الحقول...
 
-  Company({required this.name, this.logoUrl});
+  Company({required this.id, required this.name, this.image,this.is_active,required this.created_at,required this.updated_at});
 
-  // لتحويل البيانات من JSON (إذا احتجت ذلك)
   factory Company.fromJson(Map<String, dynamic> json) {
     return Company(
-      name: json['name'] as String,
-      logoUrl: json['logoUrl'] as String?,
+      id: json['id'],
+      name: json['name'],
+        image: json['image'],
+        is_active: json['is_active'] != null ? json['is_active'].toString() : null,
+        created_at:json['created_at'],
+      updated_at: json['updated_at']
     );
   }
 }
